@@ -1,0 +1,37 @@
+# {{ ansible_managed }}
+---
+version: "3.5"
+
+{% if domain_name_enable and domain_name and domain_pihole %}
+{# Make sure pihole and nginx-proxy are in the same network #}
+networks:
+  front-tier:
+    name: internet-monitoring-front-tier
+{% endif %}
+
+# More info at https://github.com/pi-hole/docker-pi-hole/ and https://docs.pi-hole.net/
+services:
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    restart: unless-stopped
+    hostname: '{{ pihole_hostname }}'
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "67:67/udp"
+      - "80:80/tcp"
+      - "443:443/tcp"
+    environment:
+      TZ: '{{ pihole_timezone }}'
+      WEBPASSWORD: '{{ pihole_password }}'
+      FTLCONF_REPLY_ADDR4: '{{ ansible_facts['default_ipv4']['address'] }}'
+    dns:
+      - 127.0.0.1
+      - 8.8.8.8
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - './etc-pihole/:/etc/pihole/'
+      - './etc-dnsmasq.d/:/etc/dnsmasq.d/'
+    cap_add:
+      - NET_ADMIN
